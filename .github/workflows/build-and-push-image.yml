@@ -1,0 +1,72 @@
+name: Build and Push Docker Image
+
+on:
+  schedule:
+    # 每2小时执行一次：分钟为0，小时为偶数
+    - cron: "0 */2 * * *"
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      # 检出仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 登录到DockerHub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push # 构建并推送
+        uses: docker/build-push-action@v4
+        with:
+          context: ./TestMirrorImage
+          push: true
+          tags: kentxxq/test-mirror-image:latest
+
+      # # 给镜像打上 Docker Hub 的标签并推送到 Docker Hub
+      # - name: Tag and push image
+      #   run: |
+      #     docker tag testMirrorImage:latest ${DOCKERHUB_USERNAME}/testMirrorImage:latest
+      #     docker push ${DOCKERHUB_USERNAME}/testMirrorImage:latest
+      #   env:
+      #     DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+      # # 获取镜像 layer 的 sha256 值
+      # - name: Extract layer sha256 using docker inspect
+      #   id: extract_sha
+      #   run: |
+      #     # 这里示例使用 docker inspect 取出 RootFS.Layers 的第一个（假设只有一个 layer）
+      #     LAYER_SHA=$(docker inspect --format='{{index .RootFS.Layers 0}}' ${DOCKERHUB_USERNAME}/testMirrorImage:latest)
+      #     echo "layer_sha256=$LAYER_SHA" >> $GITHUB_OUTPUT
+      #   env:
+      #     DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+      # # 或者你也可以通过 docker manifest inspect 获取详细信息
+      # # - name: Extract layer sha256 using manifest
+      # #   id: extract_sha_manifest
+      # #   run: |
+      # #     # 使用 docker manifest inspect 命令获取镜像 manifest (确保已经安装 docker manifest 命令)
+      # #     MANIFEST=$(docker manifest inspect ${DOCKERHUB_USERNAME}/testMirrorImage:latest)
+      # #     # 使用 jq 提取 layers 数组中的第一个 digest 值（需要提前安装 jq）
+      # #     LAYER_SHA=$(echo "$MANIFEST" | jq -r '.layers[0].digest')
+      # #     echo "layer_sha256=$LAYER_SHA" >> $GITHUB_OUTPUT
+      # #   env:
+      # #     DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+      # # 将获取的 sha256 值写入到仓库中一个文件（如 latest_sha256.txt），便于通过 GitHub API 查询
+      # - name: Update sha256 file in repository
+      #   run: |
+      #     echo "${{ steps.extract_sha.outputs.layer_sha256 }}" > latest_sha256.txt
+      #     # 配置 git（这里需要额外设置提交者信息，可以放在 secrets 中或直接写）
+      #     git config user.name "github-actions"
+      #     git config user.email "actions@github.com"
+      #     git add latest_sha256.txt
+      #     git commit -m "Update image layer sha256: ${{ steps.extract_sha.outputs.layer_sha256 }}"
+      #     git push
