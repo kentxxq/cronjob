@@ -47,7 +47,7 @@ jobs:
         id: extract_sha
         run: |
           # 这里示例使用 docker inspect 取出 RootFS.Layers 的第一个（假设只有一个 layer）
-          LAYER_SHA=$(docker inspect --format='{{index .RootFS.Layers 0}}' ${DOCKERHUB_USERNAME}/testMirrorImage:latest)
+          LAYER_SHA=$(docker inspect --format='{{index .RootFS.Layers 0}}' kentxxq/testMirrorImage:latest)
           echo "layer_sha256=$LAYER_SHA" >> $GITHUB_OUTPUT
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
