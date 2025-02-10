@@ -25,7 +25,9 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: echo file
-        run: fallocate -l 2M ./TestMirrorImage/1.txt
+        run: |
+          echo "$(date)" > "$(date +%Y-%m-%d).txt" 
+          fallocate -l 2M ./TestMirrorImage/1.txt
 
       - name: Build and push # 构建并推送
         uses: docker/build-push-action@v4
@@ -47,11 +49,13 @@ jobs:
         run: |
           echo "${{ steps.extract_sha.outputs.layer_sha256 }}" > latest_TestMirrorImage_sha256.txt
 
-      - name: store
-        uses: amousavigourabi/push-action@v0
-        with:
-          message: "store"
-          rebase: true
-          branch: "store"
-          files: "latest_TestMirrorImage_sha256.txt"
-          allow-empty: true
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b TestMirrorImage origin/TestMirrorImage || git checkout TestMirrorImage
+          git add latest_TestMirrorImage_sha256.txt
+          git commit -m "Update Layer 1 SHA256"
+          git push origin TestMirrorImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
