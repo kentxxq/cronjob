@@ -25,7 +25,8 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: echo file
-        run: fallocate -l 2M ./TestMirrorImage/1.txt
+        run: truncate -s 2M ./TestMirrorImage/1.txt
+        # run: fallocate -l 2M ./TestMirrorImage/1.txt
 
       - name: Build and push # 构建并推送
         uses: docker/build-push-action@v4
