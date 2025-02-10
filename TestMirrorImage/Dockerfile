@@ -1,5 +1,5 @@
-FROM scratch
+FROM busybox:latest
 
-COPY date.txt data.txt /
+COPY date.txt /
 
 
