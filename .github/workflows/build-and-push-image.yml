@@ -44,29 +44,14 @@ jobs:
 
       # 将获取的 sha256 值写入到仓库中一个文件（如 latest_sha256.txt），便于通过 GitHub API 查询
       - name: Update sha256 file in repository
-        uses: actions/github-script@v6
+        run: |
+          echo "${{ steps.extract_sha.outputs.layer_sha256 }}" > latest_TestMirrorImage_sha256.txt
+
+      - name: store
+        uses: amousavigourabi/push-action@v0
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const path = 'TestMirrorImage/latest_sha256.txt';
-            const sha256 = '${{ steps.extract_sha.outputs.layer_sha256 }}';
-
-            // 确保目录存在
-            fs.mkdirSync('TestMirrorImage', { recursive: true });
-            fs.writeFileSync(path, sha256);
-
-            // 提交更改
-            await github.repos.createOrUpdateFileContents({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              path: path,
-              message: `Update image layer sha256: ${sha256}`,
-              content: Buffer.from(fs.readFileSync(path)).toString('base64'),
-              sha: (await github.repos.getContent({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                path: path
-              })).data.sha || undefined,
-              branch: 'TestMirrorImage'
-            });
+          message: "store"
+          rebase: true
+          branch: "store"
+          files: "latest_TestMirrorImage_sha256.txt"
+          allow-empty: true
