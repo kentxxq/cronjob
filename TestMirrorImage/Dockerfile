@@ -1,5 +1,5 @@
 FROM scratch
 
-COPY 1.txt /
+COPY date.txt data.txt /
 
 
