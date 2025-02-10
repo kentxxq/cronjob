@@ -25,7 +25,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: echo file
-        run: echo "1" > ./TestMirrorImage/1.txt
+        run: fallocate -l 2M ./TestMirrorImage/1.txt
 
       - name: Build and push # 构建并推送
         uses: docker/build-push-action@v4
@@ -42,15 +42,15 @@ jobs:
       #   env:
       #     DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
-      # # 获取镜像 layer 的 sha256 值
-      # - name: Extract layer sha256 using docker inspect
-      #   id: extract_sha
-      #   run: |
-      #     # 这里示例使用 docker inspect 取出 RootFS.Layers 的第一个（假设只有一个 layer）
-      #     LAYER_SHA=$(docker inspect --format='{{index .RootFS.Layers 0}}' ${DOCKERHUB_USERNAME}/testMirrorImage:latest)
-      #     echo "layer_sha256=$LAYER_SHA" >> $GITHUB_OUTPUT
-      #   env:
-      #     DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      # 获取镜像 layer 的 sha256 值
+      - name: Extract layer sha256 using docker inspect
+        id: extract_sha
+        run: |
+          # 这里示例使用 docker inspect 取出 RootFS.Layers 的第一个（假设只有一个 layer）
+          LAYER_SHA=$(docker inspect --format='{{index .RootFS.Layers 0}}' ${DOCKERHUB_USERNAME}/testMirrorImage:latest)
+          echo "layer_sha256=$LAYER_SHA" >> $GITHUB_OUTPUT
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
       # # 或者你也可以通过 docker manifest inspect 获取详细信息
       # # - name: Extract layer sha256 using manifest
@@ -64,13 +64,13 @@ jobs:
       # #   env:
       # #     DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
-      # # 将获取的 sha256 值写入到仓库中一个文件（如 latest_sha256.txt），便于通过 GitHub API 查询
-      # - name: Update sha256 file in repository
-      #   run: |
-      #     echo "${{ steps.extract_sha.outputs.layer_sha256 }}" > latest_sha256.txt
-      #     # 配置 git（这里需要额外设置提交者信息，可以放在 secrets 中或直接写）
-      #     git config user.name "github-actions"
-      #     git config user.email "actions@github.com"
-      #     git add latest_sha256.txt
-      #     git commit -m "Update image layer sha256: ${{ steps.extract_sha.outputs.layer_sha256 }}"
-      #     git push
+      # 将获取的 sha256 值写入到仓库中一个文件（如 latest_sha256.txt），便于通过 GitHub API 查询
+      - name: Update sha256 file in repository
+        run: |
+          echo "${{ steps.extract_sha.outputs.layer_sha256 }}" > latest_sha256.txt
+          # 配置 git（这里需要额外设置提交者信息，可以放在 secrets 中或直接写）
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add latest_TestMirrorImage_sha256.txt
+          git commit -m "Update image layer sha256: ${{ steps.extract_sha.outputs.layer_sha256 }}"
+          git push
