@@ -1,4 +1,4 @@
-FROM busybox:latest
+FROM scratch
 
 COPY date.txt /
 
