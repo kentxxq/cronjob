@@ -25,8 +25,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: echo file
-        # run: truncate -s 2M ./TestMirrorImage/1.txt
-        run: fallocate -l 2M ./TestMirrorImage/1.jpg
+        run: fallocate -l 2M ./TestMirrorImage/1.txt
 
       - name: Build and push # 构建并推送
         uses: docker/build-push-action@v4
@@ -42,28 +41,32 @@ jobs:
           # 这里示例使用 docker inspect 取出 RootFS.Layers 的第一个（假设只有一个 layer）
           LAYER_SHA=$(docker inspect --format='{{index .RootFS.Layers 0}}' kentxxq/test-mirror-image:latest)
           echo "layer_sha256=$LAYER_SHA" >> $GITHUB_OUTPUT
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-
-      # # 或者你也可以通过 docker manifest inspect 获取详细信息
-      # # - name: Extract layer sha256 using manifest
-      # #   id: extract_sha_manifest
-      # #   run: |
-      # #     # 使用 docker manifest inspect 命令获取镜像 manifest (确保已经安装 docker manifest 命令)
-      # #     MANIFEST=$(docker manifest inspect ${DOCKERHUB_USERNAME}/testMirrorImage:latest)
-      # #     # 使用 jq 提取 layers 数组中的第一个 digest 值（需要提前安装 jq）
-      # #     LAYER_SHA=$(echo "$MANIFEST" | jq -r '.layers[0].digest')
-      # #     echo "layer_sha256=$LAYER_SHA" >> $GITHUB_OUTPUT
-      # #   env:
-      # #     DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
       # 将获取的 sha256 值写入到仓库中一个文件（如 latest_sha256.txt），便于通过 GitHub API 查询
       - name: Update sha256 file in repository
-        run: |
-          echo "${{ steps.extract_sha.outputs.layer_sha256 }}" > latest_TestMirrorImage_sha256.txt
-          # 配置 git（这里需要额外设置提交者信息，可以放在 secrets 中或直接写）
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add latest_TestMirrorImage_sha256.txt
-          git commit -m "Update image layer sha256: ${{ steps.extract_sha.outputs.layer_sha256 }}"
-          git push
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = 'TestMirrorImage/latest_sha256.txt';
+            const sha256 = '${{ steps.extract_sha.outputs.layer_sha256 }}';
+
+            // 确保目录存在
+            fs.mkdirSync('TestMirrorImage', { recursive: true });
+            fs.writeFileSync(path, sha256);
+
+            // 提交更改
+            await github.repos.createOrUpdateFileContents({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path: path,
+              message: `Update image layer sha256: ${sha256}`,
+              content: Buffer.from(fs.readFileSync(path)).toString('base64'),
+              sha: (await github.repos.getContent({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: path
+              })).data.sha || undefined,
+              branch: 'TestMirrorImage'
+            });

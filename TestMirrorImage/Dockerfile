@@ -1,5 +1,5 @@
 FROM scratch
 
-COPY 1.jpg /
+COPY 1.txt /
 
 
