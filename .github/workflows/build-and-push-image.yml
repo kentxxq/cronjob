@@ -34,19 +34,20 @@ jobs:
         with:
           context: ./TestMirrorImage
           push: true
-          tags: kentxxq/test-mirror-image:latest
+          tags: kentxxq/test-mirror-image:${{ github.run_id }}
 
       # 获取镜像 layer 的 sha256 值
       - name: Extract layer sha256 using docker inspect
         id: extract_sha
         run: |
           # 这里示例使用 docker inspect 取出 RootFS.Layers 的第一个（假设只有一个 layer）
-          LAYER_SHA=$(docker inspect --format='{{index .RootFS.Layers 0}}' kentxxq/test-mirror-image:latest)
+          LAYER_SHA=$(docker inspect --format='{{index .RootFS.Layers 0}}' kentxxq/test-mirror-image:${{ github.run_id }})
           echo "layer_sha256=$LAYER_SHA" >> $GITHUB_OUTPUT
 
       # 将获取的 sha256 值写入到仓库中一个文件（如 latest_sha256.txt），便于通过 GitHub API 查询
       - name: Update sha256 file in repository
         run: |
+          echo "${{ github.run_id }}" > latest_TestMirrorImage_run_id.txt
           echo "${{ steps.extract_sha.outputs.layer_sha256 }}" > latest_TestMirrorImage_sha256.txt
 
       # 需要在github仓库配置Read and write permissions
@@ -55,6 +56,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b TestMirrorImage
+          git add latest_TestMirrorImage_run_id.txt
           git add latest_TestMirrorImage_sha256.txt
           git commit -m "Update Layer 1 SHA256"
           git push origin TestMirrorImage -f
