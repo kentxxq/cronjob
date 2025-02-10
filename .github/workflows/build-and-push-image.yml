@@ -26,7 +26,7 @@ jobs:
 
       - name: echo file
         run: |
-          echo "$(date)" > "./TestMirrorImage/$date.txt" 
+          echo "$(date)" > "./TestMirrorImage/date.txt" 
           fallocate -l 2M ./TestMirrorImage/data.txt
 
       - name: Build and push # 构建并推送
