@@ -49,6 +49,7 @@ jobs:
         run: |
           echo "${{ steps.extract_sha.outputs.layer_sha256 }}" > latest_TestMirrorImage_sha256.txt
 
+      # 需要在github仓库配置Read and write permissions
       - name: Commit and push changes
         run: |
           git config --global user.name "github-actions[bot]"
